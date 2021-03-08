@@ -1,7 +1,7 @@
 ##!/usr/bin/python3
 # photohandler.py
 
-from PIL import image
+from PIL import Image
 from PIL import ExifTags
 import datetime
 import os
@@ -16,7 +16,7 @@ ARG_IMAGEFILE = 1
 ARG_LENGTH = 2
 
 class Photo:
-    def __init__(self.filename):
+    def __init__(self, filename):
         """Class constructor"""
         self.filename = filename
         self.filevalid = False
@@ -71,7 +71,7 @@ class Photo:
             date = self.filedates[filedate_to_use]
         except KeyError:
             print("Exif Date not found")
-            date = delf.filedates["File ModTime"]
+            date = self.filedates["File ModTime"]
         return date
     
     def previewPhoto(self):
@@ -80,4 +80,69 @@ class Photo:
         imageview = imageview.convert('RGB')
         imageview.thumbnail(previewsize, Image.ANTIALIAS)
         imageview.save(defaultimagepreview, format = 'ppm')
+
+# module test code
+def dispPreview(aPhoto):
+    """ Create a test GUI """
+    import tkinter as TK
+
+    # define the app window
+    app = TK.Tk()
+    app.title("Photo View Demo")
+
+    # Define TK objects
+    # create an empty canvas object the same size as the image
+    canvas = TK.Canvas(app, width = previewsize[0], height = previewsize[1])
+    canvas.grid(row = 0, rowspan = 2)
+
+    # add list box to display the photo data
+    # (including xyscroll bars)
+    photoInfo = TK.Variable()
+    lbPhotoInfo = TK.Listbox(app, listvariable = photoInfo, height = 18, width = 45, font = ("monospace", 10))
+    yscroll = TK.Scrollbar(command = lbPhotoInfo.yview, orient = TK.VERTICAL)
+    xscroll = TK.Scrollbar(command = lbPhotoInfo.xview, orient = TK.HORIZONTAL)
+    lbPhotoInfo.configure(xscrollcommand = xscroll.set, yscrollcommand = yscroll.set)
+    lbPhotoInfo.grid(row = 0, column = 1, sticky = TK.N + TK.S)
+    yscroll.grid(row = 0, column = 2, sticky = TK.N + TK.S)
+    xscroll.grid(row = 1, column = 1, sticky = TK.N + TK.E + TK.W)
+
+    # generate preview image
+    preview_filename = aPhoto.previewPhoto()
+    photoImg = TK.PhotoImage(file = preview_filename)
+
+    # anchor image to NW corner
+    canvas.create_image(0, 0, anchor = TK.NW, image = photoImg)
+
+    # populate infoList with dates and exif data
+    infoList = []
+    for key, value in aPhoto.filedates.items():
+        infoList.append(key.ljust(25) + value)
+    if aPhoto.exifvalid:
+        for key, value in aPhoto.exif_info.items():
+            infoList.append(key.ljust(25) + str(value))
+    
+    # set listvariable with the info list
+    photoInfo.set(tuple(infoList))
+
+    app.mainloop()
+
+def main():
+    """called only when run directly, allowing module testing"""
+    import sys
+
+    # check arguments
+    if len(sys.argv) == ARG_LENGTH:
+        print("Command %s" %(sys.argv))
+        # create an instance of the Photo class
+        viewPhoto = Photo(sys.argv[ARG_IMAGEFILE])
+        # test the module by running a GUI
+        if viewPhoto.filevalid == True:
+            dispPreview(viewPhoto)
+    else:
+        print("Usage: photohandler.py imagefile")
+
+if __name__ == '__main__':
+    main()
+
+#End
 
